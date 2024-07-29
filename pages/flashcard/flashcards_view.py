@@ -1,16 +1,7 @@
-import os
 import flet as ft
-from dotenv import load_dotenv
-import logging
-
-logging.basicConfig(level=logging.INFO)
-
-# Load environment variables
-load_dotenv()
 
 def get_view(page: ft.Page):
     search_results = ft.Column()
-    flashcard_list = ft.Column()
 
     def update_search_results(e):
         query = e.control.value.lower()
@@ -39,89 +30,6 @@ def get_view(page: ft.Page):
             on_click=lambda _: page.go(f"/flashcards/{text}")
         )
 
-    def create_add_button():
-        return ft.IconButton(
-            icon=ft.icons.ADD,
-            icon_color=ft.colors.WHITE,
-            on_click=show_flashcard_dialog,
-            tooltip="Add new flashcard",
-        )
-
-    def show_flashcard_dialog(e):
-        def close_dialog(e):
-            page.dialog.open = False
-            page.update()
-
-        def add_flashcard(e):
-            if not term_input.value or not definition_input.value or not example_input.value:
-                show_snack_bar("Please fill in all fields.")
-                return
-
-            flashcard_list.controls.append(
-                ft.ListTile(
-                    title=ft.Text(term_input.value, weight="bold"),
-                    subtitle=ft.Text(definition_input.value),
-                    trailing=ft.Text(f"Example: {example_input.value}")
-                )
-            )
-            flashcard_list.update()
-            close_dialog(e)
-
-        term_input = ft.TextField(
-            label="Term",
-            color=ft.colors.BLACK if page.theme_mode == ft.ThemeMode.LIGHT else ft.colors.WHITE,
-            width=200  # Adjust width as needed
-        )
-        definition_input = ft.TextField(
-            label="Definition",
-            multiline=True,
-            color=ft.colors.BLACK if page.theme_mode == ft.ThemeMode.LIGHT else ft.colors.WHITE,
-            width=200  # Adjust width as needed
-        )
-        example_input = ft.TextField(
-            label="Example",
-            multiline=True,
-            color=ft.colors.BLACK if page.theme_mode == ft.ThemeMode.LIGHT else ft.colors.WHITE,
-            width=200  # Adjust width as needed
-        )
-
-        add_button = ft.ElevatedButton(
-            text="Add Flashcard",
-            on_click=add_flashcard,
-            style=ft.ButtonStyle(
-                color={"": ft.colors.WHITE},
-                bgcolor={"": ft.colors.PURPLE_900},
-            ),
-            width=200  # Adjust width to match the TextFields
-        )
-
-        dialog_content = ft.Column([
-            term_input,
-            definition_input,
-            example_input,
-            add_button
-        ], spacing=20, horizontal_alignment=ft.CrossAxisAlignment.CENTER)  # Align contents to center
-
-        page.dialog = ft.AlertDialog(
-            title=ft.Text("Create Flashcard"),
-            content=ft.Container(
-                content=dialog_content,
-                width=220  # Adjust width to make the dialog narrower
-            ),
-            actions=[
-                ft.TextButton("Cancel", on_click=close_dialog)
-            ],
-            actions_alignment=ft.MainAxisAlignment.END,
-        )
-
-        page.dialog.open = True
-        page.update()
-
-    def show_snack_bar(message):
-        page.snack_bar = ft.SnackBar(content=ft.Text(message))
-        page.snack_bar.open = True
-        page.update()
-
     return ft.View(
         "/flashcards",
         [
@@ -134,7 +42,6 @@ def get_view(page: ft.Page):
                 title=ft.Text("Flashcards", color=ft.colors.WHITE, size=24, weight="bold"),
                 center_title=True,
                 bgcolor=ft.colors.PURPLE_900,
-                actions=[create_add_button()],  # Add the create button to the AppBar
                 toolbar_height=60,
             ),
             ft.Container(
@@ -178,6 +85,7 @@ def get_view(page: ft.Page):
                         ft.Text("Flashcard Categories", size=20, weight="bold", color=ft.colors.WHITE if page.theme_mode == ft.ThemeMode.DARK else "#4A148C"),
                         ft.ElevatedButton(
                             text="View All",
+                            on_click=lambda _: page.go("/flashcards/view_all"),  # Updated to route to the new view
                             style=ft.ButtonStyle(
                                 color={"": ft.colors.WHITE},
                                 bgcolor={"": "#4A148C"},
@@ -201,7 +109,6 @@ def get_view(page: ft.Page):
                             create_category_card(ft.icons.TRANSLATE, "Language"),
                         ],
                     ),
-                    flashcard_list,
                 ], spacing=20),
                 padding=20,
                 bgcolor=ft.colors.BLACK87 if page.theme_mode == ft.ThemeMode.DARK else ft.colors.WHITE,
@@ -209,20 +116,3 @@ def get_view(page: ft.Page):
             )
         ],
     )
-
-# def main(page: ft.Page):
-#     page.title = "Flashcard Master"
-#     page.window.width = 400
-#     page.window.height = 850
-#     page.window.resizable = False
-#     page.theme_mode = ft.ThemeMode.LIGHT
-
-#     def route_change(e):
-#         page.views.clear()
-#         page.views.append(get_view(page))
-#         page.update()
-
-#     page.on_route_change = route_change
-#     page.go(page.route)
-
-# ft.app(target=main)

@@ -1,67 +1,78 @@
 import flet as ft
 from flet import Page, ThemeMode, colors
 from pages import home, aitutor, profile, quizz, start
-from pages.flashcard import flashcards_view, flashcard_detail_view
+from pages.flashcard import flashcards_view, flashcard_detail_view, flashcard_view_all 
 from pages.game import hehe
 from pages.game.game_type.hangging_man.play import get_hangging_man_view
 
 import warnings
+import logging
+
 warnings.filterwarnings("ignore")
 
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+ROUTES = {
+    "/": start.get_view,
+    "/home": home.get_view,
+    "/flashcards": flashcards_view.get_view,
+    "/flashcards/view_all": flashcard_view_all.get_view,
+    "/quizz": quizz.get_view,
+    "/aitutor": aitutor.get_view,
+    "/game": hehe.get_view,
+    "/profile_user": profile.get_view,
+    "/game/hangging_man": get_hangging_man_view
+}
+
 def main(page: Page):
-    print("Starting the application...")
+    logging.info("Starting the application...")
+    
     page.title = "Flashcards App"
-
-
-    # page.theme_mode = ThemeMode.LIGHT
-    # page.theme = ft.Theme(color_scheme_seed=colors.PURPLE_900)
-    # page.dark_theme = ft.Theme(color_scheme_seed=colors.PURPLE_900)
-
-    # Thiết lập kích thước cửa sổ cố định
     page.window_width = 400
     page.window_height = 820
     page.window_resizable = False
-    page.theme_mode = "dark"
-
+    
     def route_change(e):
-        print(f"Route changed to: {page.route}")
+        logging.info(f"Route changed to: {page.route}")
         page.views.clear()
-
-        if page.route == "/":
-            page.views.append(start.get_view(page))
-        elif page.route == "/home":
-            page.views.append(home.get_view(page))
-        elif page.route == "/flashcards":
-            page.views.append(flashcards_view.get_view(page))
-        elif page.route == "/quizz":
-            page.views.append(quizz.get_view(page))
-        elif page.route == "/aitutor":
-            page.views.append(aitutor.get_view(page))
-        elif page.route == "/game":
-            page.views.append(hehe.get_view(page))
-        elif page.route == "/profile_user":
-            page.views.append(profile.get_view(page))
+         
+        try:
+            if page.route == "/flashcards/view_all":
+                logging.info("Loading view_all flashcards")
+                view = flashcard_view_all.get_view(page)
+                page.views.append(view)
+            elif page.route.startswith("/flashcards/"):
+                category = page.route.split("/")[-1]
+                logging.info(f"Loading flashcards for category: {category}")
+                view = flashcard_detail_view.get_flashcard_detail_view(page, category)
+                page.views.append(view)
+            elif page.route in ROUTES:
+                logging.info(f"Loading view for route: {page.route}")
+                view = ROUTES[page.route](page)
+                page.views.append(view)
+            else:
+                logging.warning(f"Route not found: {page.route}")
+                # Handle undefined routes if needed
+                 
             page.update()
-        elif page.route.startswith("/flashcards/"):
-            category = page.route.split("/")[-1]
-            page.views.append(flashcard_detail_view.get_flashcard_detail_view(page, category))
-        elif page.route == "/game/hangging_man":
-            page.views.append(get_hangging_man_view(page))
-        elif page.route == "/game/fruit_crush":
-            pass # Xử lý route cho Fruit Crush
-        elif page.route == "/game/memory_game":
-            pass # Xử lý route cho Memory Game
-        
-        page.update()
-
-
+        except Exception as ex:
+            logging.error(f"Error in route_change: {str(ex)}")
+     
     def view_pop(view):
+        logging.info("View popped") 
         page.views.pop()
         top_view = page.views[-1]
         page.go(top_view.route)
-
+     
     page.on_route_change = route_change
     page.on_view_pop = view_pop
-    page.go(page.route)
+     
+    if not page.route or page.route == "/":
+        logging.info("Setting initial route to /home")
+        page.go("/home")
+    else:
+        logging.info(f"Initial route is {page.route}")
+        page.go(page.route)
 
-ft.app(target=main)
+if __name__ == "__main__":
+    ft.app(target=main)

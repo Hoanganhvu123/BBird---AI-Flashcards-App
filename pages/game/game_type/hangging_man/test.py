@@ -12,16 +12,6 @@ from langchain.prompts import ChatPromptTemplate
 os.environ['GOOGLE_API_KEY'] = "AIzaSyCvYf_U35Yk_kEuKJRGWFkfc5-oGS0Cmi0"
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=1)
 
-# Global variables
-word = ""
-spaces = []
-lives = 6
-word_history = []
-
-hangman_pics = [
-    "hangman_0.png", "hangman_1.png", "hangman_2.png", "hangman_3.png", "hangman_4.png", "hangman_5.png", "hangman_6.png",
-]
-
 # Define prompt for generating questions
 question_template = """
 Generate a Hangman word and provide a very general hint. Use common words at B1 English level. The hint should be broad and simple.
@@ -30,7 +20,6 @@ Rules:
 1. Words must be common nouns at B1 level.
 2. Hints should be very general, using simple B1 vocabulary.
 3. Avoid specific features in hints.
-4. Do not use any of these words that have been used before: {history}
 
 Examples:
 1. Word: "dog", Hint: "An animal"
@@ -48,22 +37,15 @@ The response should be in JSON format as follows:
 question_prompt = ChatPromptTemplate.from_template(question_template)
 
 def generate_word_and_hint() -> Dict[str, Any]:
-    global word_history
     try:
         chain = question_prompt | llm
-        result = chain.invoke({"history": ", ".join(word_history)})
+        result = chain.invoke({})
         result_content = result.content if hasattr(result, 'content') else str(result)
         logging.info(f"Generated result: {result_content}")
         
         result_content = re.sub(r'^```json\s*|\s*```$', '', result_content.strip())
         
         parsed_result = json.loads(result_content)
-        
-        # Add the new word to history
-        word_history.append(parsed_result["word"])
-        if len(word_history) > 10:  # Keep only the last 10 words
-            word_history = word_history[-10:]
-        
         return parsed_result
         
     except json.JSONDecodeError as e:
@@ -73,6 +55,15 @@ def generate_word_and_hint() -> Dict[str, Any]:
     except Exception as e:
         logging.error(f"Error generating word and hint: {str(e)}")
         return {"word": "ERROR", "hint": "Error occurred"}
+
+# Global variables
+word = ""
+spaces = []
+lives = 6
+
+hangman_pics = [
+    "hangman_0.png", "hangman_1.png", "hangman_2.png", "hangman_3.png", "hangman_4.png", "hangman_5.png", "hangman_6.png",
+]
 
 def get_hangging_man_view(page: ft.Page):
     global word, spaces, lives
@@ -235,7 +226,6 @@ def get_hangging_man_view(page: ft.Page):
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
     )
 
-# Phần main giữ nguyên như cũ
 # def main(page: ft.Page):
 #     page.title = "Hangman Game"
 #     page.window.width = 400
